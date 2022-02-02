@@ -11,9 +11,10 @@ const route = (process.env.DEV == 'TRUE')
     : Routes.applicationCommands(process.env.CLIENT_ID)
 
 class CmdManager {
-    constructor(path = './commands/') {
+    constructor(path = './commands/', client) {
         this.path = path
         this.commands = new Map()
+        this.client = client
     }
 
     loadAndRegister() {
@@ -36,7 +37,7 @@ class CmdManager {
         })
 
         try {
-            command.exec(inter, models, params)
+            command.exec(inter, models, params, this.client)
         } catch (error) {
             console.error(error)
         }

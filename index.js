@@ -6,7 +6,7 @@ const Intents = Discord.Intents.FLAGS
 const client = new Discord.Client({ intents: [Intents.GUILDS, Intents.GUILD_MESSAGES] })
 
 const CmdManager = require('./CommandManager')
-const cmdManager = new CmdManager()
+const cmdManager = new CmdManager('./commands/', client)
 
 client.on('interactionCreate', (i) => cmdManager.handleInteractions(i))
 
