@@ -1,7 +1,7 @@
 const { SlashCommandUserOption, SlashCommandIntegerOption } = require('@discordjs/builders')
 
 module.exports.exec = async function (inter, models, params, client) {
-    const { Users, Transactions } = models
+    const { Users, Transfers } = models
     const { usuario, cantidad } = params
 
     var payerDoc = await Users.getByUid(inter.user.id)

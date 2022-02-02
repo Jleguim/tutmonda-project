@@ -1,7 +1,7 @@
 const { SlashCommandUserOption } = require('@discordjs/builders')
 
 module.exports.exec = async function (inter, models, params, client) {
-    const { Users, Transactions } = models
+    const { Users, Transfers } = models
     const { usuario } = params
 
     var target = inter.user
