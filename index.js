@@ -5,15 +5,17 @@ const Intents = Discord.Intents.FLAGS
 
 const client = new Discord.Client({ intents: [Intents.GUILDS, Intents.GUILD_MESSAGES] })
 
-const CmdManager = require('./CommandManager')
-const cmdManager = new CmdManager('./commands/', client)
+const cmdManager = require('./CommandManager')
 
-client.on('interactionCreate', (i) => cmdManager.handleInteractions(i))
+const { connection } = require('./db')
+const events = require('./events')
 
-client.once('ready', () => {
-    console.log('Ready')
-    require('./db')
+connection.then(() => {
+    client.once('ready', () => console.log('Ready'))
+
+    events.load(client)
+    cmdManager.loadAndRegister()
+    client.login(process.env.TOKEN)
 })
 
-cmdManager.loadAndRegister()
-client.login(process.env.TOKEN)
+module.exports.client = client

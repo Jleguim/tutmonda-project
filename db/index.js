@@ -1,11 +1,6 @@
 const fs = require('fs')
 const mongoose = require('mongoose')
 
-mongoose.connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-})
-
 var models = {}
 
 fs.readdirSync('./db/models/').forEach(f => {
@@ -14,4 +9,7 @@ fs.readdirSync('./db/models/').forEach(f => {
     models[modelName] = model
 })
 
-module.exports.models = models
+module.exports.connection = mongoose.connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+})

@@ -11,15 +11,17 @@ const route = (process.env.DEV == 'TRUE')
     : Routes.applicationCommands(process.env.CLIENT_ID)
 
 class CmdManager {
-    constructor(path = './commands/', client) {
+    constructor(path = './commands/'/**, client*/) {
         this.path = path
         this.commands = new Map()
-        this.client = client
+        // this.client = client
     }
 
     loadAndRegister() {
         this._loadCommands()
-        return this._registerCommands()
+        this._registerCommands()
+
+        // this.client.on('interactionCreate', (i) => this.handleInteractions(i))
     }
 
     handleInteractions(inter) {
@@ -70,4 +72,4 @@ class CmdManager {
     }
 }
 
-module.exports = CmdManager
+module.exports = new CmdManager('./commands/')
