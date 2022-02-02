@@ -1,10 +1,6 @@
 const { SlashCommandBuilder } = require('@discordjs/builders')
 const Discord = require('discord.js')
 
-module.exports.data = new SlashCommandBuilder()
-	.setName('ping')
-	.setDescription('Revisa la latencia del bot con los servers de discord XDDDD')
-
 module.exports.exec = (interaction, client) => {
 	var first = Date.now()
 	interaction.reply('Pong!')
@@ -21,3 +17,7 @@ module.exports.exec = (interaction, client) => {
 			interaction.editReply({ content: null, embeds: [embed] })
 		})
 }
+
+module.exports.data = new SlashCommandBuilder()
+	.setName('ping')
+	.setDescription('Revisa la latencia del bot.')
