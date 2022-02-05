@@ -1,14 +1,30 @@
+const { SlashCommandStringOption } = require('@discordjs/builders')
+
 const Utils = require('../utils')
-const { commsQueue } = require('../index')
+const { commsQueue, lobbies } = require('../index')
 
 module.exports.exec = async function (inter, models, params, client) {
     const data = { user: inter.user, channel: inter.channel }
-    commsQueue.q(data)
+    const { id } = params
 
+    if (id) {
+        var lobby = lobbies.get(id.value)
+        lobby.addUser(data)
+        return
+    }
+
+    commsQueue.q(data)
     commsQueue.mm()
         .then(users => {
-            const lobby = new Utils.ChatLobby(users)
-            lobby.announce('Found a lobby!')
+            var id = Utils.getRandomId()
+            var lobby = new Utils.ChatLobby(users)
+            
+            while (lobbies.has(id)) {
+                id = Utils.getRandomId()
+            }
+
+            lobbies.set(id, lobby)
+            lobby.announce('Found a lobby! Use this code to invite more friends: ' + id)
         })
         .catch((err) => {
             console.error(err)
@@ -22,4 +38,9 @@ module.exports.info = {
     aliases: ['join']
 }
 
-module.exports.options = []
+module.exports.options = [
+    new SlashCommandStringOption()
+        .setName('id')
+        .setDescription('ID del lobby al que quieres unirte.')
+        .setRequired(false)
+]
