@@ -1,44 +1,58 @@
 const models = require('mongoose').models
+const Utils = require('../utils')
 
-const timeout = new createTimeout(20000)
-function payOnMessage(message) {
-    if (message.author.bot) return
+var delay = 30
+const timeouts = new Utils.Timeouts(delay)
+function xpOnMessage(message) {
+    var valid = () => {
+        message.channel.messages.fetch()
+            .then(messages => {
+                messages = messages.filter(i => {
+                    var isAuthor = (i.author.id == message.author.id)
 
-    timeout.check(message.author, pay, () => {
-        console.log('On timeout, no pay.')
-    })
+                    var timeDif = Date.now() - i.createdAt
+                    var isAfter = (timeDif > (delay * 1000))
+                    var isBefore = (timeDif < -700) // Usually when this runs the last message has been sent a couple ms ago
+
+                    return isAuthor && (!isAfter && !isBefore)
+                })
+
+                var nCharsMessages = 0, nMessages = 0
+                messages.forEach(msg => {
+                    nCharsMessages += msg.content.length
+                    nMessages += 1
+                })
+
+                var max = Math.floor(15 / ((nMessages / nCharsMessages) + 0.01))
+                var min = Math.floor(max * 0.3)
+
+                getUserAnd(message.author, 'addXP', Utils.getRandomInt(max, min))
+            })
+    }
+
+    var invalid = () => console.log('On timeout, no reward.')
+    timeouts.check(message.author.id, 'xp', valid, invalid)
 }
 
-async function pay(user) {
+function payOnMessage(message) {
+    var valid = () => getUserAnd(message.author, 'addBalance', Utils.getRandomInt(15, 5))
+    var invalid = () => console.log('On timeout, no pay.')
+
+    timeouts.check(message.author.id, 'pay', valid, invalid)
+}
+
+async function getUserAnd(user, toRun, param) {
     const { Users } = models
 
     var userDoc = await models.Users.getByUid(user.id)
     if (!userDoc) userDoc = Users.create(user.id)
 
-    await userDoc.addBalance(100)
-}
-
-function createTimeout(max_diff = 20000) {
-    var log = new Map()
-
-    this.check = function (user, valid, invalid) {
-        if (log.has(user.id)) {
-            var lastTime = log.get(user.id)
-            var now = new Date()
-            var diff = now - lastTime
-
-            if (diff > max_diff) {
-                log.set(user.id, now)
-                valid(user)
-            } else invalid()
-        } else {
-            log.set(user.id, new Date())
-            valid(user)
-        }
-    }
+    await userDoc[toRun](param)
 }
 
 module.exports.name = 'messageCreate'
 module.exports.exec = (message) => {
-    payOnMessage(message)
+    if (message.author.bot) return
+    // payOnMessage(message)
+    xpOnMessage(message)
 }
