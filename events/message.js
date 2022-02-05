@@ -24,6 +24,8 @@ function xpOnMessage(message) {
                 })
 
                 var max = Math.floor(15 / ((nMessages / nCharsMessages) + 0.01))
+                if (isNaN(max)) max = 60
+
                 var min = Math.floor(max * 0.3)
 
                 getUserAnd(message.author, 'addXP', Utils.getRandomInt(max, min))
