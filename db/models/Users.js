@@ -20,7 +20,7 @@ User.method('addXP', async function (xp) {
     if (!this.profile.lvl) this.profile.lvl = 1
 
     this.profile.xp += xp
-    var lvlMaxXP = this.profile.lvl * 50
+    var lvlMaxXP = this.profile.lvl * 1000
     if (this.profile.xp >= lvlMaxXP) {
         this.profile.lvl += 1
         this.profile.xp -= lvlMaxXP
