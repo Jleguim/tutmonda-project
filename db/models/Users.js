@@ -5,10 +5,28 @@ const ObjectId = Schema.ObjectId
 
 const User = new Schema({
     uid: String,
+    profile: {
+        lvl: Number,
+        xp: Number
+    },
     wallet: {
         balance: Number,
         transfers: [{ type: ObjectId, ref: 'Transfers' }]
     }
+})
+
+User.method('addXP', async function (xp) {
+    if (!this.profile.xp) this.profile.xp = 0
+    if (!this.profile.lvl) this.profile.lvl = 1
+
+    this.profile.xp += xp
+    var lvlMaxXP = this.profile.lvl * 50
+    if (this.profile.xp >= lvlMaxXP) {
+        this.profile.lvl += 1
+        this.profile.xp -= lvlMaxXP
+    }
+
+    await this.save()
 })
 
 User.method('addTransfer', async function (trsfr) {
