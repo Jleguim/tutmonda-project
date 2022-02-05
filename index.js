@@ -8,6 +8,7 @@ const client = new Discord.Client({ intents: [Intents.GUILDS, Intents.GUILD_MESS
 
 const cmdManager = require('./CommandManager')
 const commsQueue = new Queue()
+const lobbies = new Map()
 
 const { connection } = require('./db')
 const events = require('./events')
@@ -22,3 +23,4 @@ connection.then(() => {
 
 module.exports.client = client
 module.exports.commsQueue = commsQueue
+module.exports.lobbies = lobbies
