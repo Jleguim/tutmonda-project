@@ -29,6 +29,7 @@ function xpOnMessage(message) {
                 var min = Math.floor(max * 0.3)
 
                 getUserAnd(message.author, 'addXP', Utils.getRandomInt(max, min))
+                getUserAnd(message.author, 'checkLevelUp', 1000)
             })
     }
 
