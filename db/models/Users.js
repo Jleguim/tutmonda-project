@@ -15,17 +15,20 @@ const User = new Schema({
     }
 })
 
+User.method('checkLevelUp', async function(perLvlXp) {
+    var lvlUpXp = this.profile.lvl * perLvlXp
+    if (this.profile.xp >= lvlUpXp) {
+        this.profile.lvl += 1
+    }
+
+    await this.save()
+})
+
 User.method('addXP', async function (xp) {
     if (!this.profile.xp) this.profile.xp = 0
     if (!this.profile.lvl) this.profile.lvl = 1
 
     this.profile.xp += xp
-    var lvlMaxXP = this.profile.lvl * 1000
-    if (this.profile.xp >= lvlMaxXP) {
-        this.profile.lvl += 1
-        this.profile.xp -= lvlMaxXP
-    }
-
     await this.save()
 })
 
