@@ -42,6 +42,29 @@ class Queue {
         this.queue.set(id, { qid: id, ...x })
     }
 
+    exists(property, value) {
+        var bool = false
+        var props = property.split('.')
+
+        this.forEach(x => {
+            var toCheck = x
+            props.forEach(prop => toCheck = toCheck[prop])
+
+            if (toCheck == value) bool = true
+        })
+
+        return bool
+    }
+
+    forEach(func) {
+        var id = 1
+        while (id <= this.length) {
+            var x = this.queue.get(id)
+            func(x)
+            id++
+        }
+    }
+
     get length() {
         return this._toArray().length
     }
