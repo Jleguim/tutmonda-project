@@ -7,15 +7,19 @@ module.exports.exec = async function (inter, models, params, client) {
     const data = { user: inter.user, channel: inter.channel }
     const { id } = params
 
+    if (commsQueue.exists('user.id', inter.user.id)) {
+        return inter.reply('Ya estas en la cola.')
+    }
+
     if (id) {
         var lobby = lobbies.get(id.value)
         lobby.addUser(data)
         return
     }
 
-    commsQueue.q(data)
-    commsQueue.mm()
-        .then(users => {
+    commsQueue.q(data) // Agrega el usuario a la cola
+    commsQueue.mm() // Intenta matchearlo con otro usuario
+        .then(users => { // Encontro match
             var id = Utils.getRandomId()
             var lobby = new Utils.ChatLobby(users)
             
@@ -24,11 +28,11 @@ module.exports.exec = async function (inter, models, params, client) {
             }
 
             lobbies.set(id, lobby)
-            lobby.announce('Found a lobby! Use this code to invite more friends: ' + id)
+            lobby.announce('Se encontro una sala! Invita a tus amigos con este codigo: ' + id)
         })
-        .catch((err) => {
-            console.error(err)
-            inter.reply('Tendras que esperar un poco')
+        .catch((err) => { // No encontro match, o error
+            if (err) console.error(err)
+            inter.reply('Haz sido agregado a la cola.')
         })
 }
 
@@ -41,6 +45,6 @@ module.exports.info = {
 module.exports.options = [
     new SlashCommandStringOption()
         .setName('id')
-        .setDescription('ID del lobby al que quieres unirte.')
+        .setDescription('ID de la sala a la que te quieres unir.')
         .setRequired(false)
 ]
