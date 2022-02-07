@@ -5,6 +5,8 @@ const Builders = require('@discordjs/builders')
 const models = require('mongoose').models
 const fs = require('fs')
 
+const utils = require('./utils')
+
 const rest = new REST({ version: '9' }).setToken(process.env.TOKEN)
 const route = (process.env.DEV == 'TRUE')
     ? Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID)
@@ -14,14 +16,11 @@ class CmdManager {
     constructor(path = './commands/'/**, client*/) {
         this.path = path
         this.commands = new Map()
-        // this.client = client
     }
 
     loadAndRegister() {
         this._loadCommands()
         this._registerCommands()
-
-        // this.client.on('interactionCreate', (i) => this.handleInteractions(i))
     }
 
     handleInteractions(inter) {
@@ -29,6 +28,7 @@ class CmdManager {
 
         if (!inter.isCommand()) return
         if (!this.commands.has(commandName)) return
+        if (inter.user.bot) return
 
         var command = this.commands.get(commandName)
         var params = {}
@@ -38,11 +38,15 @@ class CmdManager {
             params[n] = inter.options.get(n)
         })
 
-        try {
-            command.exec(inter, models, params, this.client)
-        } catch (error) {
-            console.error(error)
+        if (inter.inGuild) {
+            var guiconf = new Utils.ConfigManager(inter.guildId)
+            // Is in command channels
+            if (!guiconf.commandChannels.includes(inter.guildId)) return
+
+            return command.exec(inter, models, params, guiconf)
         }
+
+        command.exec(inter, models, params)
     }
 
     _loadCommands() {

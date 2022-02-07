@@ -3,7 +3,7 @@ const Utils = require('../utils')
 
 var delay = 30
 const timeouts = new Utils.Timeouts(delay)
-function xpOnMessage(message) {
+function xpOnMessage(message, guiconf) {
     var valid = () => {
         message.channel.messages.fetch()
             .then(messages => {
@@ -29,6 +29,7 @@ function xpOnMessage(message) {
                 var min = Math.floor(max * 0.3)
 
                 getUserAnd(message.author, 'addXP', Utils.getRandomInt(max, min))
+                getUserAnd(message.author, 'checkLevelUp', guiconf.perLvlXp)
             })
     }
 
@@ -55,6 +56,8 @@ async function getUserAnd(user, toRun, param) {
 module.exports.name = 'messageCreate'
 module.exports.exec = (message) => {
     if (message.author.bot) return
+    var guiconf = new Utils.ConfigManager(message.guild.id)
+
     // payOnMessage(message)
-    xpOnMessage(message)
+    xpOnMessage(message, guiconf)
 }
