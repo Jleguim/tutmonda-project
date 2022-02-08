@@ -1,6 +1,7 @@
 const Discord = require('discord.js')
+const { client } = require('../index')
 
-module.exports.exec = async function (inter, models, params, client) {
+module.exports.exec = async function (inter, models, params) {
     var first = Date.now()
     inter.reply('Pong!')
         .then(() => {
