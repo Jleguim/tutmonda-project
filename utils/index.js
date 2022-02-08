@@ -1,13 +1,10 @@
-const Timeouts = require('./Timeouts')
-const ConfigManager = require('./ConfigManager')
+const Timeout = require('./Timeout')
 
 function getRandomInt(max, min) {
     return Math.floor(Math.random() * (max - min + 1)) + min
 }
 
 module.exports = {
-    Timeouts,
-    ConfigManager,
-    
+    Timeout,
     getRandomInt
 }
