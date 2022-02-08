@@ -5,15 +5,13 @@ const Builders = require('@discordjs/builders')
 const models = require('mongoose').models
 const fs = require('fs')
 
-const utils = require('./utils')
-
 const rest = new REST({ version: '9' }).setToken(process.env.TOKEN)
 const route = (process.env.DEV == 'TRUE')
     ? Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID)
     : Routes.applicationCommands(process.env.CLIENT_ID)
 
 class CmdManager {
-    constructor(path = './commands/'/**, client*/) {
+    constructor(path = './commands/') {
         this.path = path
         this.commands = new Map()
     }
@@ -23,8 +21,9 @@ class CmdManager {
         this._registerCommands()
     }
 
-    handleInteractions(inter) {
+    async handleInteractions(inter) {
         const { commandName } = inter
+        const { GuildConfigs } = models
 
         if (!inter.isCommand()) return
         if (!this.commands.has(commandName)) return
@@ -38,11 +37,14 @@ class CmdManager {
             params[n] = inter.options.get(n)
         })
 
-        if (inter.inGuild) {
-            var guiconf = new Utils.ConfigManager(inter.guildId)
-            // Is in command channels
-            if (!guiconf.commandChannels.includes(inter.guildId)) return
-
+        if (inter.inGuild()) {
+            var guiconf = await GuildConfigs.getByGuid(inter.guildId)
+            if (!guiconf) {
+                guiconf = new GuildConfigs({ guid: inter.guildId })
+                await guiconf.save()
+            }
+            
+            if (!guiconf.isCommandChannel(inter.channelId)) return
             return command.exec(inter, models, params, guiconf)
         }
 

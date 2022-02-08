@@ -1,47 +1,26 @@
 const models = require('mongoose').models
 const Utils = require('../utils')
 
-var delay = 30
-const timeouts = new Utils.Timeouts(delay)
+const xpTimeout = new Utils.Timeout()
 function xpOnMessage(message, guiconf) {
-    var valid = () => {
-        message.channel.messages.fetch()
-            .then(messages => {
-                messages = messages.filter(i => {
-                    var isAuthor = (i.author.id == message.author.id)
+    var valid = async () => {
+        var messages = await message.channel.messages.fetch()
+        messages = messages.filter(i => i.author.id == message.author.id)
+        messages = messages.filter(i => i.createdAt > (Date.now() - xpTimeout.delay))
 
-                    var timeDif = Date.now() - i.createdAt
-                    var isAfter = (timeDif > (delay * 1000))
-                    var isBefore = (timeDif < -700) // Usually when this runs the last message has been sent a couple ms ago
+        var msgs = messages.size, chars = 0
+        messages.forEach(msg => chars += msg.content.length)
 
-                    return isAuthor && (!isAfter && !isBefore)
-                })
+        var max = Math.floor(15 / ((msgs / chars) + 0.01))
+        var min = Math.floor(max * 0.3)
+        var randomXp = Utils.getRandomInt(max, min)
 
-                var nCharsMessages = 0, nMessages = 0
-                messages.forEach(msg => {
-                    nCharsMessages += msg.content.length
-                    nMessages += 1
-                })
-
-                var max = Math.floor(15 / ((nMessages / nCharsMessages) + 0.01))
-                if (isNaN(max)) max = 60
-
-                var min = Math.floor(max * 0.3)
-
-                getUserAnd(message.author, 'addXP', Utils.getRandomInt(max, min))
-                getUserAnd(message.author, 'checkLevelUp', guiconf.perLvlXp)
-            })
+        getUserAnd(message.author, 'addXP', randomXp)
+        getUserAnd(message.author, 'checkLevelUp', guiconf.perLvlXp)
     }
 
     var invalid = () => console.log('On timeout, no reward.')
-    timeouts.check(message.author.id, 'xp', valid, invalid)
-}
-
-function payOnMessage(message) {
-    var valid = () => getUserAnd(message.author, 'addBalance', Utils.getRandomInt(15, 5))
-    var invalid = () => console.log('On timeout, no pay.')
-
-    timeouts.check(message.author.id, 'pay', valid, invalid)
+    xpTimeout.check(message.author.id, valid, invalid)
 }
 
 async function getUserAnd(user, toRun, param) {
@@ -54,10 +33,16 @@ async function getUserAnd(user, toRun, param) {
 }
 
 module.exports.name = 'messageCreate'
-module.exports.exec = (message) => {
+module.exports.exec = async (message) => {
+    const { GuildConfigs } = models
     if (message.author.bot) return
-    var guiconf = new Utils.ConfigManager(message.guild.id)
 
-    // payOnMessage(message)
+    var guiconf = await GuildConfigs.getByGuid(message.guild.id)
+    if (!guiconf) {
+        guiconf = new GuildConfigs({ guid: message.guild.id })
+        await guiconf.save()
+    }
+
+    xpTimeout.delay = guiconf.xpTimeout
     xpOnMessage(message, guiconf)
 }
