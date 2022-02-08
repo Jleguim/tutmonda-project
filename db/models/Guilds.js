@@ -5,12 +5,18 @@ const ObjectId = Schema.ObjectId
 
 const GuildConfig = new Schema({
     guid: String,
+
     commandChannels: [String],
     farmChannels: [String],
     notifiactionChannels: [String],
 
     perLvlXp: { type: Number, default: 1000 },
     xpTimeout: { type: Number, default: 30 }
+})
+
+GuildConfig.method('isFarmChannel', function (chuid) {
+    if (this.farmChannels.includes(chuid)) return true
+    else return false
 })
 
 GuildConfig.method('isCommandChannel', function (chuid) {
