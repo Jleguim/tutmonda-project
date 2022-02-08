@@ -1,10 +1,11 @@
 const Timeout = require('./Timeout')
+const XpManager = require('./XpManager')
+const Functions = require('./Functions')
 
-function getRandomInt(max, min) {
-    return Math.floor(Math.random() * (max - min + 1)) + min
-}
 
 module.exports = {
     Timeout,
-    getRandomInt
+    XpManager,
+    
+    ...Functions
 }
