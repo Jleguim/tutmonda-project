@@ -4,7 +4,7 @@
   "description": "GLOBAL project.",
   "main": "index.js",
   "scripts": {
-    "test": "nodemon ."
+    "test": "node ."
   },
   "keywords": [],
   "author": "",

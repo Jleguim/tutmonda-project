@@ -11,24 +11,23 @@ const route = (process.env.DEV == 'TRUE')
     : Routes.applicationCommands(process.env.CLIENT_ID)
 
 class CmdManager {
-    constructor(path = './commands/'/**, client*/) {
+    constructor(path = './commands/') {
         this.path = path
         this.commands = new Map()
-        // this.client = client
     }
 
     loadAndRegister() {
         this._loadCommands()
         this._registerCommands()
-
-        // this.client.on('interactionCreate', (i) => this.handleInteractions(i))
     }
 
-    handleInteractions(inter) {
+    async handleInteractions(inter) {
         const { commandName } = inter
+        const { GuildConfigs } = models
 
         if (!inter.isCommand()) return
         if (!this.commands.has(commandName)) return
+        if (inter.user.bot) return
 
         var command = this.commands.get(commandName)
         var params = {}
@@ -38,11 +37,22 @@ class CmdManager {
             params[n] = inter.options.get(n)
         })
 
-        try {
-            command.exec(inter, models, params, this.client)
-        } catch (error) {
-            console.error(error)
+        if (inter.inGuild()) {
+            var guiconf = await GuildConfigs.getByGuid(inter.guildId)
+            if (!guiconf) {
+                guiconf = new GuildConfigs({ guid: inter.guildId })
+                await guiconf.save()
+            }
+            
+            if (!guiconf.isCommandChannel(inter.channelId)) {
+                inter.reply({ content: 'Aqui no puedes enviar comandos', ephemeral: true })
+                return
+            }
+
+            return command.exec(inter, models, params, guiconf)
         }
+
+        command.exec(inter, models, params)
     }
 
     _loadCommands() {
