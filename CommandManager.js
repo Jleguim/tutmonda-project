@@ -44,7 +44,11 @@ class CmdManager {
                 await guiconf.save()
             }
             
-            if (!guiconf.isCommandChannel(inter.channelId)) return
+            if (!guiconf.isCommandChannel(inter.channelId)) {
+                inter.reply({ content: 'Aqui no puedes enviar comandos', ephemeral: true })
+                return
+            }
+
             return command.exec(inter, models, params, guiconf)
         }
 
