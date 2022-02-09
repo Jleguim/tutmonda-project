@@ -15,13 +15,11 @@ const GuildConfig = new Schema({
 })
 
 GuildConfig.method('isFarmChannel', function (chuid) {
-    if (this.farmChannels.includes(chuid)) return true
-    else return false
+    return this.farmChannels.includes(chuid)
 })
 
 GuildConfig.method('isCommandChannel', function (chuid) {
-    if (this.commandChannels.includes(chuid)) return true
-    else return false
+    return this.commandChannels.includes(chuid)
 })
 
 GuildConfig.static('getByGuid', function (guid) {
