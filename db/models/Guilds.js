@@ -14,6 +14,10 @@ const GuildConfig = new Schema({
     xpTimeout: { type: Number, default: 30 }
 })
 
+GuildConfig.method('isNotificationChannel', function (chuid) {
+    return this.notifiactionChannels.includes(chuid)
+})
+
 GuildConfig.method('isFarmChannel', function (chuid) {
     return this.farmChannels.includes(chuid)
 })
