@@ -12,7 +12,26 @@ const User = new Schema({
     wallet: {
         balance: Number,
         transfers: [{ type: ObjectId, ref: 'Transfers' }]
-    }
+    },
+    inventory: [{
+        item_id: { type: Number, required: true }, // id del item en la tienda
+        use_id: { type: Number, required: true, sparse: true }, // id del uso para poder usar el item
+        active: { type: Boolean, required: true, default: false },
+        active_since: { type: Date, default: null }
+    }]
+})
+
+User.method('hasItem', function(itemId){
+    let x = false;
+    this.inventory.forEach(item => {
+        if(item.item_id === itemId) x = true;
+    });
+
+    return x
+})
+
+User.method('canBuy', function(item){
+    return this.wallet.balance >= item.price
 })
 
 User.method('checkLevelUp', async function(perLvlXp) {

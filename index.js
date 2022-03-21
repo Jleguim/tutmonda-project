@@ -13,12 +13,13 @@ const lobbies = new Map()
 const { connection } = require('./db')
 const events = require('./events')
 
-connection.then(() => {
+connection.then(async () => {
     client.once('ready', () => console.log('Ready'))
 
     events.load(client)
     cmdManager.loadAndRegister()
-    client.login(process.env.TOKEN)
+    await client.login(process.env.TOKEN)
+    await cmdManager.createPerms(client)
 })
 
 module.exports.client = client

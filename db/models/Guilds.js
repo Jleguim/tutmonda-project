@@ -8,14 +8,18 @@ const GuildConfig = new Schema({
 
     commandChannels: [String],
     farmChannels: [String],
-    notifiactionChannels: [String],
+    notificationChannels: [String],
+
+    adminRoles : [String],
 
     perLvlXp: { type: Number, default: 1000 },
-    xpTimeout: { type: Number, default: 30 }
+    xpTimeout: { type: Number, default: 30 },
+
+    shop: { type: ObjectId, ref: "Shops" }
 })
 
 GuildConfig.method('isNotificationChannel', function (chuid) {
-    return this.notifiactionChannels.includes(chuid)
+    return this.notificationChannels.includes(chuid)
 })
 
 GuildConfig.method('isFarmChannel', function (chuid) {
