@@ -30,8 +30,13 @@ User.method('hasItem', function(itemId){
     return x
 })
 
-User.method('canBuy', function(item){
-    return this.wallet.balance >= item.price
+User.method('canBuy', function(price){
+    return this.wallet.balance >= price
+})
+
+User.method("findItemIndex", function(itemId){
+    let x = this.inventory.findIndex(x => x.item_id === itemId);
+    return x < 0 ? null : x;
 })
 
 User.method('checkLevelUp', async function(perLvlXp) {
