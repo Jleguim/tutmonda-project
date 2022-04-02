@@ -1,76 +1,104 @@
 const Discord = require("discord.js");
-const ms = require("ms");
 const models = require('mongoose').models
 const { Users } = models;
 const { isOnMobible } = require("./Functions") // for later
 const Id = require("./Id")
+const InteractivePages = require("./InteractivePages")
 
 class Shop {
     constructor(doc, inter) {
         this.shop = doc;
+        this.shop.items = this.shop.items.sort((a, b) => a.id - b.id);
+
         this.interaction = inter;
-        this.items;
+
+        this.items = new Map();
+        this.base = {
+            title: `${this.interaction.guild.name} Shop`,
+            icon: this.interaction.guild.iconURL() ?? this.interaction.member.displayAvatarURL(),
+            description: ``,
+            addon: `**{item_id} — {item_name}**\n\`▸\` {item_desc}\n▸ ${this.shop.emote ?? "🍋"}{item_price}\n\n`,
+            footer: `Página {ACTUAL} de {TOTAL}`,
+            icon_footer: this.interaction.guild.iconURL()
+        }
+
+        this.pages;
         this.user;
     }
 
     async setup(){
-        this.user = await Users.findOne({uid: this.interaction.user.id});
+        this.user = await Users.getByUid(this.interaction.user.id);
+        this.base.description = `**—** ¡Bienvenid@ a la tienda! para comprar items usa usa /shop buy:\`ID del item\`.\n**—** Tienes 🍋**${this.user.wallet.balance}**`;
 
-        // items
-        this.items = await this._generatePages(this.user, 3);
+        this.shop.items.forEach( (item, index) => {
 
-        const base = {
-            title: `${this.interaction.guild.name} Shop`,
-            icon: this.interaction.guild.iconURL() ?? this.interaction.member.displayAvatarURL(),
-            description: `**—** ¡Bienvenid@ a la tienda! para comprar items usa usa /shop buy:\`ID del item\`.
-            **—** Tienes 🍋**${this.user.wallet.balance}**`,
-            footer: `Página {ACTUAL} de {TOTAL}`,
-            icon_footer: this.interaction.guild.iconURL()
-        }
+            var price = this._determinePrice(this.user, item, true);
 
-        let embed = new Discord.MessageEmbed()
-        .setAuthor({name: base.title, iconURL: base.icon})
-        .setColor(this.interaction.member.displayHexColor)
-        .setDescription(`${base.description}\n\n${this.items[0].join(" ")}`)
-        .setFooter({text: base.footer.replace(new RegExp("{ACTUAL}", "g"), `1`).replace(new RegExp("{TOTAL}", "g"), `${this.items.length}`), iconURL: base.icon_footer});
-        
-        this._interactivePages(embed, base);
+            this.items.set(item.id, {
+                item_name: item.name,
+                item_desc: item.description,
+                item_price: price,
+                item_id: item.id,
+                showable: (item.after_use.action !== null && !item.disabled) ?? false,
+                index
+            })
+        });
+
+        return this._prepareInit();
     }
 
     async showAllItems(){
-        this.user = await Users.findOne({uid: this.interaction.user.id});
-        this.items = await this._generatePages(this.user, 3, true);
+        this.user = await Users.getByUid(this.interaction.user.id);
+        this.base.description = `**—** [NOT READY]: Falta el uso (\`/admin items action\`)\n**—** [HIDDEN]: Item desactivado (\`/admin items toggle\`)\n**—** [✅]: El item es visible y usable para cualquiera.`;
+        this.base.addon = this.base.addon.substring(0, 2) + "{publicInfo} — ID: " + this.base.addon.substr(2)
 
-        const base = {
-            title: `${this.interaction.guild.name} Listado de items`,
-            icon: this.interaction.guild.iconURL() ?? this.interaction.member.displayAvatarURL(),
-            description: `**—** [NOT READY]: Falta el uso (\`/admin items action\`)
-            **—** [HIDDEN]: Item desactivado (\`/admin items toggle\`)
-            **—** [✅]: El item es visible y usable para cualquiera.`,
-            footer: `Página {ACTUAL} de {TOTAL}`,
-            icon_footer: this.interaction.guild.iconURL()
-        }
+        this.shop.items.forEach((item, index) => {
+            let publicInfo;
+            if(!item.after_use.action) publicInfo = "[NOT READY] ";
+            else if(item.disabled) publicInfo = "[HIDDEN] ";
+            else publicInfo = "[✅] ";
+            
+            var price = this._determinePrice(this.user, item, true);
+            
+            this.items.set(item.id, {
+                item_name: item.name,
+                item_desc: item.description,
+                item_price: price,
+                item_id: item.id,
+                publicInfo,
+                index
+            })
+        });
+
+        return this._prepareInit();
+    }
+
+    async _prepareInit(){
+        const interactive = new InteractivePages(this.base, this.items)
+        this.pages = interactive.pages;
 
         let embed = new Discord.MessageEmbed()
-        .setAuthor({name: base.title, iconURL: base.icon})
+        .setAuthor({name: this.base.title, iconURL: this.base.icon})
         .setColor(this.interaction.member.displayHexColor)
-        .setDescription(`${base.description}\n\n${this.items[0].join(" ")}`)
-        .setFooter({text: base.footer.replace(new RegExp("{ACTUAL}", "g"), `1`).replace(new RegExp("{TOTAL}", "g"), `${this.items.length}`), iconURL: base.icon_footer});
-        
-        this._interactivePages(embed, base);
+        .setDescription(`${this.base.description}\n\n${this.pages.get(1).join(" ")}`)
+        .setFooter({text: this.base.footer.replace(new RegExp("{ACTUAL}", "g"), `1`).replace(new RegExp("{TOTAL}", "g"), `${this.pages.size}`), iconURL: this.base.icon_footer});
+
+        await interactive.init(embed, this.interaction);
     }
 
     async buy(itemId){
-        let user = await Users.findOne({uid: this.interaction.user.id});
+        let user = await Users.getByUid(this.interaction.user.id);
         const item = this.shop.findItem(itemId);
 
         if(!item) return this.interaction.editReply("literalmente no existe, matate");
-        if(!user.canBuy(item)) return this.interaction.editReply("literalmente no tienes tanta plata, matate");
+        var price = this._determinePrice(user, item);
+
+        if(!user.canBuy(price)) return this.interaction.editReply("literalmente no tienes tanta plata, matate");
         if(user.hasItem(itemId)) return this.interaction.editReply("literalmente ya tienes este item, matate")
 
         const newUseId = new Id(await Users.find(), "inventory", "use_id").newId;
 
-        user.wallet.balance -= item.price;
+        user.wallet.balance -= price;
         user.inventory.push({item_id: item.id, use_id: newUseId})
 
         await user.save();
@@ -103,7 +131,7 @@ class Shop {
     }
 
     async editUse(params){
-        const item = this.shop.findItem(params.id.value);
+        const item = this.shop.findItem(params.id.value, false);
         if(!item) return this.interaction.editReply(`No existe un item con id \`${params.id.value}\` ❌`)
 
         const use = item.after_use;
@@ -118,8 +146,9 @@ class Shop {
     }
 
     async editItem(params, subcommand){
+
         
-        const item = this.shop.findItem(params.id.value);
+        const item = this.shop.findItem(params.id.value, false);
         if(!item) return this.interaction.editReply(`No existe un item con id \`${params.id.value}\` ❌`)
 
         switch(subcommand){
@@ -144,118 +173,9 @@ class Shop {
         return this.shop.save();
     }
 
-    async _generatePages(user, itemsPerPage, listing = false){
-        itemsPerPage = itemsPerPage || 3;
-      
-        /* const interest_txt = "Al comprar este item, su precio subirá";
-        const viewExtension = "ꜝ"; */
-      
-        const shop = this.shop
-        const emote = "🍋"
-      
-        if(!shop || shop.items.length === 0) return null;
-      
-        const items = shop.items.sort((a, b) => a.id - b.id);
-      
-        let pag_actual = 1;
-        let fin = itemsPerPage * pag_actual - 1; // el index del ultimo item a mostrar
-      
-        if(items.length <= fin){
-          fin = items.length - 1;
-        }
-      
-        let pags = [];
-        let actualpage = [];
-    
-        pagesLoop:
-        for (let i = 0; i < items.length; i++) {
-            const item = items[i];
-          
-            if(i > fin) { // ayuda no se como hace varias paginas
-                pags.push(actualpage);
-            
-                actualpage = [];
-                pag_actual++;
-                fin = itemsPerPage * pag_actual - 1;
-            
-                if(items.length <= fin){
-                    fin = items.length - 1;
-                }
-            }
-
-            const precio = this._determinePrice(user, item, true);
-            const nombre = item.name;
-            const desc = item.description;
-            const id = item.id;
-
-            if((!item.after_use.action || item.disabled) && !listing) continue pagesLoop;
-      
-            let publicInfo = "";
-            if(listing){
-                if(!item.after_use.action) publicInfo = "[NOT READY] ";
-                else if(item.disabled) publicInfo = "[HIDDEN] ";
-                else publicInfo = "[✅] ";
-            }
-
-            actualpage.push(`**${publicInfo}{ ${id} } — ${nombre}**\n\`▸\` ${desc}\n▸ ${emote}${precio}\n\n`);
-        }
-      
-        pags.push(actualpage);
-      
-        return pags || null;
-    }
-
     _determinePrice(user, item, toString){
         // por ahora es simplemente un return pero después cuando se metan los descuentos por roles, etc, se usa bien 👍 y no un cursed coso
-        return item.price;
-    }
-    
-    async _interactivePages(firstEmbed, base){
-        const row = new Discord.MessageActionRow()
-            .addComponents(
-                new Discord.MessageButton()
-                    .setCustomId("back")
-                    .setEmoji("⬅️")
-                    .setStyle("PRIMARY"),
-                new Discord.MessageButton()
-                    .setCustomId("next")
-                    .setEmoji("➡️")
-                    .setStyle("PRIMARY"),
-            )
-
-        if(this.items.length === 1) row.components.forEach(c => c.setDisabled()); // no tiene más de una pagina
-
-        let msg = await this.interaction.editReply({components: [row], embeds: [firstEmbed]});
-        
-        const filter = i => i.user.id === this.interaction.user.id;
-        const collector = msg.channel.createMessageComponentCollector({ filter, time: ms("1m") });
-
-        let pagn = 0;
-        collector.on("collect", async i => {
-            await i.deferUpdate();
-
-            if(i.customId === "back"){
-                if(pagn === 0) return;
-                pagn--;
-            } else {
-                if(pagn === this.items.length - 1) return;
-                pagn++;
-            }
-
-            let embed = new Discord.MessageEmbed()
-            .setAuthor(base.title, base.icon)
-            .setColor(this.interaction.member.displayHexColor)
-            .setDescription(`${base.description}\n\n${this.items[pagn].join(" ")}`)
-            .setFooter(base.footer.replace(new RegExp("{ACTUAL}", "g"), `${pagn + 1}`).replace(new RegExp("{TOTAL}", "g"), `${this.items.length}`), base.icon_footer);
-
-            await this.interaction.editReply({embeds: [embed]});
-        });
-
-        collector.on("end", () => {
-            row.components.forEach(c => c.setDisabled());
-            this.interaction.editReply({components: [row]});
-        })
-
+        return toString ? item.price.toLocaleString("es-CO") : item.price;
     }
 }
 

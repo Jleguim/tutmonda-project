@@ -32,13 +32,17 @@ Shop.static("getById", function(id){
     return this.findOne({ id });
 })
 
-Shop.method("findItem", function(itemId){
-    return this.items.find(x => x.id === itemId && !x.disabled && x.after_use.action);
+Shop.method("findItem", function(itemId, strict = true){
+    return strict ? this.items.find(x => x.id === itemId && !x.disabled && x.after_use.action) : this.items.find(x => x.id === itemId);
 })
 
 Shop.method("findItemIndex", function(itemId){
     let x = this.items.findIndex(x => x.id === itemId);
     return x < 0 ? null : x;
+})
+
+Shop.method("isUsable", function(item){
+    return item.after_use.action !== null && !item.disabled;
 })
 
 module.exports = mongoose.model('Shops', Shop)

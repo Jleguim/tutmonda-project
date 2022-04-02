@@ -5,6 +5,8 @@ const ChatLobby = require('./ChatLobby')
 const Queue = require('./Queue')
 const Shop = require('./Shop')
 const Id = require('./Id')
+const Inventory = require('./Inventory')
+const InteractivePages = require('./InteractivePages')
 
 module.exports = {
     Timeout,
@@ -13,6 +15,8 @@ module.exports = {
     ChatLobby,
     Shop,
     Id,
+    Inventory,
+    InteractivePages,
 
     ...Functions
 }
