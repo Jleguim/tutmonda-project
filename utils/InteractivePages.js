@@ -11,7 +11,7 @@ class InteractivePages {
      */
     constructor(structure, items, itemsNum = 3){
         this.base = structure;
-        this.base.title, this.base.author_icon, this.base.color, this.base.description, this.base.footer, this.base.footer_icon = "";
+        this._prepareBase();
 
         if(!this.base.addon) throw "addon can not be undefined nor can be an empty string";
 
@@ -23,6 +23,15 @@ class InteractivePages {
 
 
         this._generatePages();
+    }
+
+    _prepareBase(){
+        this.base.title = this.base.title ?? "";
+        this.base.author_icon = this.base.author_icon ?? "";
+        this.base.color = this.base.color ?? "WHITE";
+        this.base.description = this.base.description ?? "";
+        this.base.footer = this.base.footer ?? "";
+        this.base.footer_icon = this.base.footer_icon ?? "";
     }
 
     _generatePages(){
